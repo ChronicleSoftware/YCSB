@@ -423,8 +423,8 @@ public class Client
 			}
 
 			exporter.write("OVERALL", "RunTime(ms)", runtime);
-			double throughput = 1000.0 * ((double) opcount) / ((double) runtime);
-			exporter.write("OVERALL", "Throughput(ops/sec)", throughput);
+            long throughput = 1000L * opcount / runtime;
+            exporter.write("OVERALL", "Throughput(ops/sec)", throughput);
 
 			Measurements.getMeasurements().exportMeasurements(exporter);
 		} finally

@@ -514,7 +514,7 @@ public class HBaseClient extends com.yahoo.ycsb.DB
         }
         long en=System.currentTimeMillis();
 
-        System.out.println("Throughput: "+((1000.0)*(((double)(opcount*threadcount))/((double)(en-st))))+" ops/sec");
+        System.out.println("Throughput: " + 1000 * opcount * threadcount / (en - st) + " ops/sec");
 
     }
 }

@@ -47,8 +47,8 @@ public class ChronicleClient extends DB {
     public static final String FILE_NAME = "chronicle.file";
 
     public void init() throws DBException {
-//        synchronized (ChronicleClient.class) {
-//            if (map != null) return;
+        synchronized (ChronicleClient.class) {
+            if (map != null) return;
 
             Properties props = getProperties();
             long recordCount = Long.parseLong(props.getProperty("recordcount", "1000000"));
@@ -70,7 +70,7 @@ public class ChronicleClient extends DB {
             } catch (IOException e) {
                 throw new DBException(e);
             }
-//        }
+        }
     }
 
     public void cleanup() throws DBException {

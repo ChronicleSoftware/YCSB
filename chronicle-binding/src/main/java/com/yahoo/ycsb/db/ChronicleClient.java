@@ -38,16 +38,19 @@ import net.openhft.lang.io.serialization.impl.StringMarshaller;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ChronicleClient extends DB {
 
     private static final boolean KEY_CHECK = Boolean.getBoolean("key.check");
     private static ChronicleMap<String, Map<String, String>> map;
+    private static final AtomicInteger count = new AtomicInteger();
 
     public static final String FILE_NAME = "chronicle.file";
 
     public void init() throws DBException {
         synchronized (ChronicleClient.class) {
+            count.incrementAndGet();
             if (map != null) return;
 
             Properties props = getProperties();
@@ -59,7 +62,7 @@ public class ChronicleClient extends DB {
                         (ChronicleMapBuilder)
                                 ChronicleMapBuilder.of(String.class, Map.class))
                         .entries(recordCount)
-                        .entrySize(1200)
+                        .entrySize(1100)
                         .keyMarshaller(new StringMarshaller(0))
                         .putReturnsNull(true)
                         .removeReturnsNull(true)
@@ -75,7 +78,8 @@ public class ChronicleClient extends DB {
 
     public void cleanup() throws DBException {
         try {
-            map.close();
+            if (count.decrementAndGet() == 0)
+                map.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -426,7 +426,7 @@ public class CoreWorkload extends Workload
  		{
  			keynum=Utils.hash(keynum);
  		}
-		return "user"+keynum;
+		return "user" + Long.toString(keynum, Character.MAX_RADIX);
 	}
 	HashMap<String, ByteIterator> buildValues() {
  		HashMap<String,ByteIterator> values=new HashMap<String,ByteIterator>();

@@ -66,9 +66,8 @@ public class ChronicleClient extends DB {
                         .keyMarshaller(new StringMarshaller(0))
                         .putReturnsNull(true)
                         .removeReturnsNull(true)
-                        .valueMarshallerAndFactory(
-                                new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(0)),
-                                new NewInstanceObjectFactory(LinkedHashMap.class))
+                        .valueMarshaller(
+                                new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(0)))
                         .createWithFile(new File(filename));
             } catch (IOException e) {
                 throw new DBException(e);

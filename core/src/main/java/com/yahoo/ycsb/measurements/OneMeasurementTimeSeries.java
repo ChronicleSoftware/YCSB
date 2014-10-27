@@ -164,4 +164,8 @@ public class OneMeasurementTimeSeries extends OneMeasurement {
         return "[" + getName() + " AverageLatency(us)=" + d.format(report) + "]";
     }
 
+    @Override
+    public void merge(OneMeasurement value) {
+        throw new UnsupportedOperationException();
+    }
 }

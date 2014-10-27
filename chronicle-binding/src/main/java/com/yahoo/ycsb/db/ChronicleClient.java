@@ -42,32 +42,35 @@ import java.util.*;
 public class ChronicleClient extends DB {
 
     private static final boolean KEY_CHECK = Boolean.getBoolean("key.check");
-    private ChronicleMap<String, Map<String, String>> map;
+    private static ChronicleMap<String, Map<String, String>> map;
 
     public static final String FILE_NAME = "chronicle.file";
 
     public void init() throws DBException {
-        Properties props = getProperties();
-        int port;
-        long recordCount = Long.parseLong(props.getProperty("recordcount", "1000000"));
-        String tmp = System.getProperty("java.io.tmpdir");
-        String filename = props.getProperty(FILE_NAME, tmp + "/chronicle-" + recordCount + ".ycsb");
-        try {
-            map = ((ChronicleMapBuilder<String, Map<String, String>>)
-                    (ChronicleMapBuilder)
-                            ChronicleMapBuilder.of(String.class, Map.class))
-                    .entries(recordCount)
-                    .entrySize(2000)
-                    .keyMarshaller(new StringMarshaller(128))
-                    .putReturnsNull(true)
-                    .removeReturnsNull(true)
-                    .valueMarshallerAndFactory(
-                            new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(128)),
-                            new NewInstanceObjectFactory(LinkedHashMap.class))
-                    .createWithFile(new File(filename));
-        } catch (IOException e) {
-            throw new DBException(e);
-        }
+//        synchronized (ChronicleClient.class) {
+//            if (map != null) return;
+
+            Properties props = getProperties();
+            long recordCount = Long.parseLong(props.getProperty("recordcount", "1000000"));
+            String tmp = System.getProperty("java.io.tmpdir");
+            String filename = props.getProperty(FILE_NAME, tmp + "/chronicle-" + recordCount + ".ycsb");
+            try {
+                map = ((ChronicleMapBuilder<String, Map<String, String>>)
+                        (ChronicleMapBuilder)
+                                ChronicleMapBuilder.of(String.class, Map.class))
+                        .entries(recordCount)
+                        .entrySize(1200)
+                        .keyMarshaller(new StringMarshaller(0))
+                        .putReturnsNull(true)
+                        .removeReturnsNull(true)
+                        .valueMarshallerAndFactory(
+                                new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(0)),
+                                new NewInstanceObjectFactory(LinkedHashMap.class))
+                        .createWithFile(new File(filename));
+            } catch (IOException e) {
+                throw new DBException(e);
+            }
+//        }
     }
 
     public void cleanup() throws DBException {

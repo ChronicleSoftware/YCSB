@@ -25,7 +25,7 @@ import com.yahoo.ycsb.measurements.exporter.MeasurementsExporter;
 /**
  * A single measured metric (such as READ LATENCY)
  */
-public abstract class OneMeasurement {
+public abstract class OneMeasurement implements Cloneable {
 
 	String _name;
 	
@@ -53,4 +53,14 @@ public abstract class OneMeasurement {
    * @throws IOException Thrown if the export failed.
    */
   public abstract void exportMeasurements(MeasurementsExporter exporter) throws IOException;
+
+    public OneMeasurement clone() {
+        try {
+            return (OneMeasurement) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    public abstract void merge(OneMeasurement value);
 }

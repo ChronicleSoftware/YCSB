@@ -23,6 +23,7 @@ import com.yahoo.ycsb.measurements.exporter.MeasurementsExporter;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 
@@ -63,9 +64,36 @@ public class OneMeasurementHistogram extends OneMeasurement {
         returncodes = new HashMap<Integer, int[]>();
     }
 
+    @Override
+    public synchronized void merge(OneMeasurement value) {
+        OneMeasurementHistogram omh = (OneMeasurementHistogram) value;
+        assert _buckets == omh._buckets;
+        for (int i = 0; i < _buckets; i++)
+            histogram[i] += omh.histogram[i];
+        histogramoverflow += omh.histogramoverflow;
+        operations += omh.operations;
+        totallatency += omh.totallatency;
+        windowoperations += omh.windowoperations;
+        windowtotallatency += omh.windowtotallatency;
+        if (min > omh.min) min = omh.min;
+        if (max < omh.max) max = omh.max;
+        for (Map.Entry<Integer, int[]> entry : omh.returncodes.entrySet()) {
+            Integer key = entry.getKey();
+            int[] values = entry.getValue();
+            int[] ints = returncodes.get(key);
+            if (ints == null) {
+                returncodes.put(key, values.clone());
+            } else {
+                for (int i = 0; i < ints.length; i++)
+                    ints[i] += values[i];
+            }
+
+        }
+    }
+
     /* (non-Javadoc)
-     * @see com.yahoo.ycsb.OneMeasurement#reportReturnCode(int)
-     */
+         * @see com.yahoo.ycsb.OneMeasurement#reportReturnCode(int)
+         */
     public synchronized void reportReturnCode(int code) {
         Integer Icode = code;
         if (!returncodes.containsKey(Icode)) {

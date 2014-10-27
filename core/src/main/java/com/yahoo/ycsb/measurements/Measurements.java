@@ -19,8 +19,8 @@
 package com.yahoo.ycsb.measurements;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Properties;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.yahoo.ycsb.measurements.exporter.MeasurementsExporter;
 
@@ -57,7 +57,15 @@ public class Measurements
 		return singleton;
 	}
 
-	HashMap<String,OneMeasurement> data;
+    final List<Map<String, OneMeasurement>> allData = Collections.synchronizedList(new ArrayList<Map<String, OneMeasurement>>());
+	final ThreadLocal<Map<String,OneMeasurement>> data = new ThreadLocal<Map<String, OneMeasurement>>() {
+        @Override
+        protected Map<String, OneMeasurement> initialValue() {
+            Map<String, OneMeasurement> map = new HashMap<String, OneMeasurement>();
+                allData.add(map);
+            return map;
+        }
+    };
 	boolean histogram=true;
 
 	private Properties _props;
@@ -67,8 +75,6 @@ public class Measurements
        */
 	public Measurements(Properties props)
 	{
-		data=new HashMap<String,OneMeasurement>();
-		
 		_props=props;
 		
 		if (_props.getProperty(MEASUREMENT_TYPE, MEASUREMENT_TYPE_DEFAULT).compareTo("histogram")==0)
@@ -96,46 +102,25 @@ public class Measurements
       /**
        * Report a single value of a single metric. E.g. for read latency, operation="READ" and latency is the measured value.
        */
-	public synchronized void measure(String operation, int latency)
+	public void measure(String operation, int latency)
 	{
-		if (!data.containsKey(operation))
-		{
-			synchronized(this)
-			{
-				if (!data.containsKey(operation))
-				{
-					data.put(operation,constructOneMeasurement(operation));
-				}
-			}
-		}
-		try
-		{
-			data.get(operation).measure(latency);
-		}
-		catch (java.lang.ArrayIndexOutOfBoundsException e)
-		{
-			System.out.println("ERROR: java.lang.ArrayIndexOutOfBoundsException - ignoring and continuing");
-			e.printStackTrace();
-			e.printStackTrace(System.out);
-		}
+        acquireOneMeasurement(operation).measure(latency);
 	}
 
-      /**
+    private OneMeasurement acquireOneMeasurement(String operation) {
+        OneMeasurement oneMeasurement = data.get().get(operation);
+        if (oneMeasurement == null) {
+            data.get().put(operation, oneMeasurement = constructOneMeasurement(operation));
+        }
+        return oneMeasurement;
+    }
+
+    /**
        * Report a return code for a single DB operaiton.
        */
 	public void reportReturnCode(String operation, int code)
 	{
-		if (!data.containsKey(operation))
-		{
-			synchronized(this)
-			{
-				if (!data.containsKey(operation))
-				{
-					data.put(operation,constructOneMeasurement(operation));
-				}
-			}
-		}
-		data.get(operation).reportReturnCode(code);
+        acquireOneMeasurement(operation).reportReturnCode(code);
 	}
 	
   /**
@@ -146,18 +131,38 @@ public class Measurements
    */
   public void exportMeasurements(MeasurementsExporter exporter) throws IOException
   {
+      Map<String, OneMeasurement> data = combineAllData();
     for (OneMeasurement measurement : data.values())
     {
       measurement.exportMeasurements(exporter);
     }
   }
-	
-      /**
+
+    private Map<String, OneMeasurement> combineAllData() {
+        Map<String, OneMeasurement> comb = new HashMap<String, OneMeasurement>();
+        synchronized (allData) {
+            for (Map<String, OneMeasurement> map : allData) {
+                for (Map.Entry<String, OneMeasurement> entry : map.entrySet()) {
+                    OneMeasurement om = comb.get(entry.getKey());
+                    if (om == null) {
+                        comb.put(entry.getKey(), om = entry.getValue().clone());
+                    } else {
+                        om.merge(entry.getValue());
+                    }
+
+                }
+            }
+        }
+        return comb;
+    }
+
+    /**
        * Return a one line summary of the measurements.
        */
 	public String getSummary()
 	{
 		String ret="";
+        Map<String, OneMeasurement> data = combineAllData();
 		for (OneMeasurement m : data.values())
 		{
 			ret+=m.getSummary()+" ";

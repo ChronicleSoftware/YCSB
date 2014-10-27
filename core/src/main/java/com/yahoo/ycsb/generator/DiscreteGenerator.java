@@ -18,8 +18,7 @@
 
 package com.yahoo.ycsb.generator;
 
-import java.util.Vector;
-import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.yahoo.ycsb.Utils;
 import com.yahoo.ycsb.WorkloadException;
@@ -41,12 +40,13 @@ public class DiscreteGenerator extends Generator
 		}
 	}
 
-	Vector<Pair> _values;
+	final CopyOnWriteArrayList<Pair> _values;
+    double _valueSum = 0;
 	String _lastvalue;
 
 	public DiscreteGenerator()
 	{
-		_values=new Vector<Pair>();
+		_values=new CopyOnWriteArrayList<Pair>();
 		_lastvalue=null;
 	}
 
@@ -55,31 +55,17 @@ public class DiscreteGenerator extends Generator
 	 */
 	public String nextString()
 	{
-		double sum=0;
+        double val=Utils.random().nextInt(100)/100.0 * _valueSum;
 
-		for (Pair p : _values)
-		{
-			sum+=p._weight;
-		}
+        for (int i = 1; i < _values.size(); i++) {
+            Pair p = _values.get(i);
+            if (val < p._weight) {
+                return p._value;
+            }
 
-		double val=Utils.random().nextDouble();
-
-		for (Pair p : _values)
-		{
-			if (val<p._weight/sum)
-			{
-				return p._value;
-			}
-
-			val-=p._weight/sum;
-		}
-
-		//should never get here.
-		System.out.println("oops. should not get here.");
-
-		System.exit(0);
-
-		return null;
+            val -= p._weight;
+        }
+        return _values.get(0)._value;
 	}
 
 	/**
@@ -110,6 +96,7 @@ public class DiscreteGenerator extends Generator
 	public void addValue(double weight, String value)
 	{
 		_values.add(new Pair(weight,value));
+        _valueSum += weight;
 	}
 
 }

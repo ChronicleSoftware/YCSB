@@ -31,7 +31,7 @@ import com.yahoo.ycsb.DBException;
 import com.yahoo.ycsb.StringByteIterator;
 import net.openhft.chronicle.map.ChronicleMap;
 import net.openhft.chronicle.map.ChronicleMapBuilder;
-import net.openhft.chronicle.map.TcpReplicationConfig;
+import net.openhft.chronicle.hash.TcpReplicationConfig;
 import net.openhft.lang.io.serialization.impl.MapMarshaller;
 import net.openhft.lang.io.serialization.impl.StringMarshaller;
 
@@ -40,7 +40,7 @@ import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static net.openhft.chronicle.common.StatelessBuilder.remoteAddress;
+import static net.openhft.chronicle.hash.StatelessBuilder.remoteAddress;
 
 public class ChronicleStatelessClient extends DB {
 

@@ -68,7 +68,7 @@ public class ChronicleStatelessClient extends DB {
             }
 
             count.incrementAndGet();
-            if (statelessMap != null) return;
+            if (serverMap != null) return;
 
             Properties props = getProperties();
             long recordCount = Long.parseLong(props.getProperty("recordcount", "1000000"));

@@ -62,7 +62,7 @@ public class ChronicleClient extends DB {
                         (ChronicleMapBuilder)
                                 ChronicleMapBuilder.of(String.class, Map.class))
                         .entries(recordCount)
-                        .entrySize(1100)
+                        .entrySize(1200)
                         .keyMarshaller(new StringMarshaller(0))
                         .putReturnsNull(true)
                         .removeReturnsNull(true)

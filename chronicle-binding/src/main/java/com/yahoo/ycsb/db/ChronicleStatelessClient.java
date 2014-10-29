@@ -45,13 +45,28 @@ import static net.openhft.chronicle.common.StatelessBuilder.remoteAddress;
 public class ChronicleStatelessClient extends DB {
 
     private static final boolean KEY_CHECK = Boolean.getBoolean("key.check");
-    private static ChronicleMap<String, Map<String, String>> statelessMap;
+    private ChronicleMap<String, Map<String, String>> statelessMap;
     private static ChronicleMap<String, Map<String, String>> serverMap;
     private static final AtomicInteger count = new AtomicInteger();
 
 
     public void init() throws DBException {
         synchronized (ChronicleClient.class) {
+            // stateless client
+            try {
+                statelessMap = ((ChronicleMapBuilder<String, Map<String, String>>)
+                        (ChronicleMapBuilder)
+                                ChronicleMapBuilder.of(String.class, Map.class))
+                        .entrySize(1200)
+                        .keyMarshaller(new StringMarshaller(0))
+                        .valueMarshaller(
+                                new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(0)))
+                        .stateless(remoteAddress(new InetSocketAddress("localhost", 8076)))
+                        .create();
+            } catch (IOException e) {
+                throw new DBException(e);
+            }
+
             count.incrementAndGet();
             if (statelessMap != null) return;
 
@@ -66,7 +81,7 @@ public class ChronicleStatelessClient extends DB {
                             (ChronicleMapBuilder)
                                     ChronicleMapBuilder.of(String.class, Map.class))
                             .entries(recordCount)
-                            .entrySize(1100)
+                            .entrySize(1200)
                             .keyMarshaller(new StringMarshaller(0))
                             .putReturnsNull(true)
                             .removeReturnsNull(true)
@@ -79,23 +94,6 @@ public class ChronicleStatelessClient extends DB {
 
             }
 
-            // stateless client
-            {
-                try {
-                    statelessMap = ((ChronicleMapBuilder<String, Map<String, String>>)
-                            (ChronicleMapBuilder)
-                                    ChronicleMapBuilder.of(String.class, Map.class))
-                            .keyMarshaller(new StringMarshaller(0))
-                            .valueMarshaller(
-                                    new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(0)))
-                            .stateless(remoteAddress(new InetSocketAddress("localhost", 8076)))
-                            .create();
-                } catch (IOException e) {
-                    throw new DBException(e);
-                }
-            }
-
-
         }
     }
 
@@ -103,8 +101,8 @@ public class ChronicleStatelessClient extends DB {
         try {
             if (count.decrementAndGet() == 0) {
                 serverMap.close();
-                statelessMap.close();
             }
+            statelessMap.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

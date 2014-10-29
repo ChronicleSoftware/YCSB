@@ -59,15 +59,14 @@ public class ChronicleStatelessClient extends DB {
                         (ChronicleMapBuilder)
                                 ChronicleMapBuilder.of(String.class, Map.class))
                         .entrySize(1200)
-                        .keyMarshaller(new StringMarshaller(0))
+                        .keyMarshaller(new StringMarshaller(1024))
                         .valueMarshaller(
-                                new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(0)))
+                                new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(1024)))
                         .stateless(remoteAddress(new InetSocketAddress("localhost", 8076)))
                         .create();
             } catch (IOException e) {
                 throw new DBException(e);
             }
-
             count.incrementAndGet();
             if (serverMap != null) return;
 
@@ -83,16 +82,15 @@ public class ChronicleStatelessClient extends DB {
                                     ChronicleMapBuilder.of(String.class, Map.class))
                             .entries(recordCount)
                             .entrySize(1200)
-                            .keyMarshaller(new StringMarshaller(0))
+                            .keyMarshaller(new StringMarshaller(1024))
                             .putReturnsNull(true)
                             .removeReturnsNull(true)
                             .valueMarshaller(
-                                    new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(0)))
+                                    new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(1024)))
                             .replicators((byte) 1, TcpReplicationConfig.of(8076)).create();
                 } catch (IOException e) {
                     throw new DBException(e);
                 }
-
             }
 
         }

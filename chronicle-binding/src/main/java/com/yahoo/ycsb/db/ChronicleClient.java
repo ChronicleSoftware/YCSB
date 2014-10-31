@@ -54,6 +54,9 @@ public class ChronicleClient extends DB {
 
             Properties props = getProperties();
             long recordCount = Long.parseLong(props.getProperty("recordcount", "1000000"));
+            int fieldcount = Integer.parseInt(props.getProperty("fieldcount", "10"));
+            int fieldlength = Integer.parseInt(props.getProperty("fieldlength", "100"));
+            int entrySize = fieldcount * fieldlength * 12 / 10 + 10;
             String tmp = System.getProperty("java.io.tmpdir");
             String filename = props.getProperty(FILE_NAME, tmp + "/chronicle-" + recordCount + ".ycsb");
             try {
@@ -61,7 +64,7 @@ public class ChronicleClient extends DB {
                         (ChronicleMapBuilder)
                                 ChronicleMapBuilder.of(String.class, Map.class))
                         .entries(recordCount)
-                        .entrySize(1200)
+                        .entrySize(entrySize)
                         .keyMarshaller(new StringMarshaller(0))
                         .putReturnsNull(true)
                         .removeReturnsNull(true)

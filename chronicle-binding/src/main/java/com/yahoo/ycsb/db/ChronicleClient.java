@@ -32,7 +32,6 @@ import com.yahoo.ycsb.StringByteIterator;
 import net.openhft.chronicle.map.ChronicleMap;
 import net.openhft.chronicle.map.ChronicleMapBuilder;
 import net.openhft.lang.io.serialization.impl.MapMarshaller;
-import net.openhft.lang.io.serialization.impl.NewInstanceObjectFactory;
 import net.openhft.lang.io.serialization.impl.StringMarshaller;
 
 import java.io.File;
@@ -42,11 +41,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ChronicleClient extends DB {
 
-    private static final boolean KEY_CHECK = Boolean.getBoolean("key.check");
-    private static ChronicleMap<String, Map<String, String>> map;
-    private static final AtomicInteger count = new AtomicInteger();
-
     public static final String FILE_NAME = "chronicle.file";
+    private static final boolean KEY_CHECK = Boolean.getBoolean("key.check");
+    private static final AtomicInteger count = new AtomicInteger();
+    private static ChronicleMap<String, Map<String, String>> map;
+    final Set<String> keys = Collections.synchronizedSet(new HashSet<String>());
 
     public void init() throws DBException {
         synchronized (ChronicleClient.class) {
@@ -84,8 +83,6 @@ public class ChronicleClient extends DB {
         }
     }
 
-    //XXX jedis.select(int index) to switch to `table`
-
     @Override
     public int read(String table, String key, Set<String> fields,
                     HashMap<String, ByteIterator> result) {
@@ -104,8 +101,6 @@ public class ChronicleClient extends DB {
         }
         return 0;
     }
-
-    final Set<String> keys = Collections.synchronizedSet(new HashSet<String>());
 
     @Override
     public int insert(String table, String key, HashMap<String, ByteIterator> values) {

@@ -25,8 +25,8 @@
 # run with
 # vm: -Xmx2g -Xmn1800m -Djava.io.tmpdir=/ssd/tmp
 # args: -db com.yahoo.ycsb.db.ChronicleClient -P workloads/workloada -t -threads 15
-recordcount=100000000
-operationcount=100000000
+recordcount=10000000
+operationcount=20000000
 workload=com.yahoo.ycsb.workloads.CoreWorkload
 
 readallfields=true
@@ -39,5 +39,5 @@ insertproportion=0
 requestdistribution=zipfian
 
 maxexecutiontime=600
-#fieldcount=10
-#fieldlength=10
+fieldcount=10
+fieldlength=10

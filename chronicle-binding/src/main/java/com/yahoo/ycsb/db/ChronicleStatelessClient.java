@@ -11,7 +11,7 @@ import com.yahoo.ycsb.ByteIterator;
 import com.yahoo.ycsb.DB;
 import com.yahoo.ycsb.DBException;
 import com.yahoo.ycsb.StringByteIterator;
-import net.openhft.chronicle.hash.TcpReplicationConfig;
+import net.openhft.chronicle.hash.replication.TcpConfig;
 import net.openhft.chronicle.map.ChronicleMap;
 import net.openhft.chronicle.map.ChronicleMapBuilder;
 import net.openhft.lang.io.serialization.impl.MapMarshaller;
@@ -22,16 +22,14 @@ import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static net.openhft.chronicle.hash.StatelessBuilder.remoteAddress;
-
 
 public class ChronicleStatelessClient extends DB {
 
     private static final boolean KEY_CHECK = Boolean.getBoolean("key.check");
-    private ChronicleMap<String, Map<String, String>> statelessMap;
-    private static ChronicleMap<String, Map<String, String>> serverMap;
     private static final AtomicInteger count = new AtomicInteger();
-
+    private static ChronicleMap<String, Map<String, String>> serverMap;
+    final Set<String> keys = Collections.synchronizedSet(new HashSet<String>());
+    private ChronicleMap<String, Map<String, String>> statelessMap;
 
     public void init() throws DBException {
         synchronized (ChronicleClient.class) {
@@ -44,7 +42,7 @@ public class ChronicleStatelessClient extends DB {
                         .keyMarshaller(new StringMarshaller(1024))
                         .valueMarshaller(
                                 new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(1024)))
-                        .stateless(remoteAddress(new InetSocketAddress("localhost", 8076)))
+                        .statelessClient(new InetSocketAddress("localhost", 8076))
                         .create();
             } catch (IOException e) {
                 throw new DBException(e);
@@ -69,7 +67,7 @@ public class ChronicleStatelessClient extends DB {
                             .removeReturnsNull(true)
                             .valueMarshaller(
                                     new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(1024)))
-                            .replicators((byte) 1, TcpReplicationConfig.of(8076)).create();
+                            .replication((byte) 1, TcpConfig.forReceivingOnlyNode(8076)).create();
                 } catch (IOException e) {
                     throw new DBException(e);
                 }
@@ -77,6 +75,8 @@ public class ChronicleStatelessClient extends DB {
 
         }
     }
+
+    //XXX jedis.select(int index) to switch to `table`
 
     public void cleanup() throws DBException {
         try {
@@ -88,8 +88,6 @@ public class ChronicleStatelessClient extends DB {
             e.printStackTrace();
         }
     }
-
-    //XXX jedis.select(int index) to switch to `table`
 
     @Override
     public int read(String table, String key, Set<String> fields,
@@ -109,8 +107,6 @@ public class ChronicleStatelessClient extends DB {
         }
         return 0;
     }
-
-    final Set<String> keys = Collections.synchronizedSet(new HashSet<String>());
 
     @Override
     public int insert(String table, String key, HashMap<String, ByteIterator> values) {

@@ -52,7 +52,7 @@ public class ChronicleClient extends DB {
                         .removeReturnsNull(true)
                         .valueMarshaller(
                                 new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(0)))
-                        .createWithFile(new File(filename));
+                        .createPersistedTo(new File(filename));
             } catch (IOException e) {
                 throw new DBException(e);
             }

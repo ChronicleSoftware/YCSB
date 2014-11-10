@@ -11,7 +11,7 @@ import com.yahoo.ycsb.ByteIterator;
 import com.yahoo.ycsb.DB;
 import com.yahoo.ycsb.DBException;
 import com.yahoo.ycsb.StringByteIterator;
-import net.openhft.chronicle.hash.replication.TcpConfig;
+import net.openhft.chronicle.hash.replication.TcpTransportAndNetworkConfig;
 import net.openhft.chronicle.map.ChronicleMap;
 import net.openhft.chronicle.map.ChronicleMapBuilder;
 import net.openhft.lang.io.serialization.impl.MapMarshaller;
@@ -67,7 +67,7 @@ public class ChronicleStatelessClient extends DB {
                             .removeReturnsNull(true)
                             .valueMarshaller(
                                     new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(1024)))
-                            .replication((byte) 1, TcpConfig.forReceivingOnlyNode(8076)).create();
+                            .replication((byte) 1, TcpTransportAndNetworkConfig.forReceivingOnlyNode(8076)).create();
                 } catch (IOException e) {
                     throw new DBException(e);
                 }

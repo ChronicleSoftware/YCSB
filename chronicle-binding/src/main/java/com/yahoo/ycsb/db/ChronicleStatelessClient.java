@@ -67,7 +67,7 @@ public class ChronicleStatelessClient extends DB {
                             .removeReturnsNull(true)
                             .valueMarshaller(
                                     new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(1024)))
-                            .replication((byte) 1, TcpTransportAndNetworkConfig.forReceivingOnlyNode(8076)).create();
+                            .replication((byte) 1, TcpTransportAndNetworkConfig.of(8076)).create();
                 } catch (IOException e) {
                     throw new DBException(e);
                 }

@@ -34,22 +34,22 @@ public class ChronicleStatelessClient extends DB {
     private ChronicleMap<String, Map<String, String>> statelessMap;
 
     public void init() throws DBException {
+        Properties props = getProperties();
+        int fieldcount = Integer.parseInt(props.getProperty("fieldcount", "10"));
+        int fieldlength = Integer.parseInt(props.getProperty("fieldlength", "100"));
+        int entrySize = 256; //fieldcount * fieldlength * 12 / 10 + 10;
         synchronized (ChronicleClient.class) {
-            Properties props = getProperties();
             try {
                 if (serverMap == null) {
                     // server
                     if (HOSTNAME.equals("localhost")) {
                         long recordCount = Long.parseLong(props.getProperty("recordcount", "1000000"));
-                        serverMap = startServer(recordCount, props);
+                        serverMap = startServer(recordCount, props, entrySize);
                     }
                 }
                 // stateless client
 
                 long recordCount = Long.parseLong(props.getProperty("recordcount", "1000000"));
-                int fieldcount = Integer.parseInt(props.getProperty("fieldcount", "10"));
-                int fieldlength = Integer.parseInt(props.getProperty("fieldlength", "100"));
-                int entrySize = fieldcount * fieldlength * 12 / 10 + 10;
 
                 statelessMap = ((ChronicleMapBuilder<String, Map<String, String>>)
                         (ChronicleMapBuilder)
@@ -71,12 +71,7 @@ public class ChronicleStatelessClient extends DB {
         }
     }
 
-    private static ChronicleMap<String, Map<String, String>> startServer(long recordCount, Properties props) throws IOException {
-        String tmp = System.getProperty("java.io.tmpdir");
-
-        int fieldcount = Integer.parseInt(props.getProperty("fieldcount", "10"));
-        int fieldlength = Integer.parseInt(props.getProperty("fieldlength", "100"));
-        int entrySize = fieldcount * fieldlength * 12 / 10 + 10;
+    private static ChronicleMap<String, Map<String, String>> startServer(long recordCount, Properties props, int entrySize) throws IOException {
 
         return ((ChronicleMapBuilder<String, Map<String, String>>)
                 (ChronicleMapBuilder)
@@ -179,7 +174,7 @@ public class ChronicleStatelessClient extends DB {
             System.exit(1);
         }
         long recordCount = Long.parseLong(args[0]);
-        ChronicleMap<String, Map<String, String>> map = startServer(recordCount, System.getProperties());
+        ChronicleMap<String, Map<String, String>> map = startServer(recordCount, System.getProperties(), 256);
         System.out.println("server running on port " + PORT);
         System.in.read();
         map.close();

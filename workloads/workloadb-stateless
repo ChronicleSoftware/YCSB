@@ -25,8 +25,8 @@
 # vm: -Xmx2g -Xmn1800m -Djava.io.tmpdir=/ssd/tmp
 # args: -db com.yahoo.ycsb.db.ChronicleStatelessClient -P workloads/workloadb-stateless -t -threads 30
 
-recordcount=300000
-operationcount=300000
+recordcount=1000000
+operationcount=2000000
 workload=com.yahoo.ycsb.workloads.CoreWorkload
 
 readallfields=true

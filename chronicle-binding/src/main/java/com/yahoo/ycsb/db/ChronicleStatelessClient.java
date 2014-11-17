@@ -14,8 +14,6 @@ import com.yahoo.ycsb.StringByteIterator;
 import net.openhft.chronicle.hash.replication.TcpTransportAndNetworkConfig;
 import net.openhft.chronicle.map.ChronicleMap;
 import net.openhft.chronicle.map.ChronicleMapBuilder;
-import net.openhft.lang.io.serialization.impl.MapMarshaller;
-import net.openhft.lang.io.serialization.impl.StringMarshaller;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -57,12 +55,13 @@ public class ChronicleStatelessClient extends DB {
                         (ChronicleMapBuilder)
                                 ChronicleMapBuilder.of(String.class, Map.class))
                         .entries(recordCount)
-                        .entrySize(entrySize)
-                        .keyMarshaller(new StringMarshaller(0))
+                        .entrySize(100*1024)
+                      //  .keyMarshaller(new StringMarshaller(0))
                         .putReturnsNull(true)
                         .removeReturnsNull(true)
-                        .valueMarshaller(
-                                new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(0)))
+                     //   .valueMarshaller(
+                      //          new MapMarshaller<String, String>(new StringMarshaller(128), new
+                       // StringMarshaller(0)))
                         .statelessClient(new InetSocketAddress(HOSTNAME, PORT))
                         .create();
             } catch (IOException e) {
@@ -83,12 +82,13 @@ public class ChronicleStatelessClient extends DB {
                 (ChronicleMapBuilder)
                         ChronicleMapBuilder.of(String.class, Map.class))
                 .entries(recordCount)
-                .entrySize(entrySize)
-                .keyMarshaller(new StringMarshaller(0))
+                .entrySize(100*1024)
+              //  .keyMarshaller(new StringMarshaller(0))
                 .putReturnsNull(true)
                 .removeReturnsNull(true)
-                .valueMarshaller(
-                        new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(0)))
+            //    .valueMarshaller(
+              //          new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller
+            //    (0)))
                 .replication((byte) 1, TcpTransportAndNetworkConfig.of(PORT))
                 .create();
     }

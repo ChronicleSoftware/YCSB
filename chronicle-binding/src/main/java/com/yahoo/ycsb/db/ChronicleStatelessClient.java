@@ -17,7 +17,6 @@ import net.openhft.chronicle.map.ChronicleMapBuilder;
 import net.openhft.lang.io.serialization.impl.MapMarshaller;
 import net.openhft.lang.io.serialization.impl.StringMarshaller;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -49,13 +48,21 @@ public class ChronicleStatelessClient extends DB {
                 }
                 // stateless client
 
+                long recordCount = Long.parseLong(props.getProperty("recordcount", "1000000"));
+                int fieldcount = Integer.parseInt(props.getProperty("fieldcount", "10"));
+                int fieldlength = Integer.parseInt(props.getProperty("fieldlength", "100"));
+                int entrySize = fieldcount * fieldlength * 12 / 10 + 10;
+
                 statelessMap = ((ChronicleMapBuilder<String, Map<String, String>>)
                         (ChronicleMapBuilder)
                                 ChronicleMapBuilder.of(String.class, Map.class))
-                        .entrySize(128)
-                        .keyMarshaller(new StringMarshaller(1024))
+                        .entries(recordCount)
+                        .entrySize(entrySize)
+                        .keyMarshaller(new StringMarshaller(0))
+                        .putReturnsNull(true)
+                        .removeReturnsNull(true)
                         .valueMarshaller(
-                                new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(1024)))
+                                new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(0)))
                         .statelessClient(new InetSocketAddress(HOSTNAME, PORT))
                         .create();
             } catch (IOException e) {
@@ -67,20 +74,23 @@ public class ChronicleStatelessClient extends DB {
 
     private static ChronicleMap<String, Map<String, String>> startServer(long recordCount, Properties props) throws IOException {
         String tmp = System.getProperty("java.io.tmpdir");
-        String filename = props.getProperty(FILE_NAME, tmp + "/chronicle-" + recordCount + ".ycsb");
+
+        int fieldcount = Integer.parseInt(props.getProperty("fieldcount", "10"));
+        int fieldlength = Integer.parseInt(props.getProperty("fieldlength", "100"));
+        int entrySize = fieldcount * fieldlength * 12 / 10 + 10;
 
         return ((ChronicleMapBuilder<String, Map<String, String>>)
                 (ChronicleMapBuilder)
                         ChronicleMapBuilder.of(String.class, Map.class))
                 .entries(recordCount)
-                .entrySize(128)
-                .keyMarshaller(new StringMarshaller(1024))
+                .entrySize(entrySize)
+                .keyMarshaller(new StringMarshaller(0))
                 .putReturnsNull(true)
                 .removeReturnsNull(true)
                 .valueMarshaller(
-                        new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(1024)))
+                        new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(0)))
                 .replication((byte) 1, TcpTransportAndNetworkConfig.of(PORT))
-                .createPersistedTo(new File(filename));
+                .create();
     }
 
     //XXX jedis.select(int index) to switch to `table`

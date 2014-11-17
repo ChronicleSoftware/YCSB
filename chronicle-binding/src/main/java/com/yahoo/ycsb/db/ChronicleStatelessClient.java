@@ -17,6 +17,7 @@ import net.openhft.chronicle.map.ChronicleMapBuilder;
 import net.openhft.lang.io.serialization.impl.MapMarshaller;
 import net.openhft.lang.io.serialization.impl.StringMarshaller;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -25,68 +26,70 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ChronicleStatelessClient extends DB {
 
+    private static final String FILE_NAME = "chronicle.file";
     private static final boolean KEY_CHECK = Boolean.getBoolean("key.check");
     private static final AtomicInteger count = new AtomicInteger();
+    private static final String HOSTNAME = System.getProperty("server", "localhost");
+    private static final int PORT = Integer.getInteger("port", 8076);
+
     private static ChronicleMap<String, Map<String, String>> serverMap;
     final Set<String> keys = Collections.synchronizedSet(new HashSet<String>());
     private ChronicleMap<String, Map<String, String>> statelessMap;
 
     public void init() throws DBException {
         synchronized (ChronicleClient.class) {
-            // stateless client
+            Properties props = getProperties();
             try {
+                if (serverMap == null) {
+                    // server
+                    if (HOSTNAME.equals("localhost")) {
+                        long recordCount = Long.parseLong(props.getProperty("recordcount", "1000000"));
+                        serverMap = startServer(recordCount, props);
+                    }
+                }
+                // stateless client
+
                 statelessMap = ((ChronicleMapBuilder<String, Map<String, String>>)
                         (ChronicleMapBuilder)
                                 ChronicleMapBuilder.of(String.class, Map.class))
-                        .entrySize(1200)
+                        .entrySize(128)
                         .keyMarshaller(new StringMarshaller(1024))
                         .valueMarshaller(
                                 new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(1024)))
-                        .statelessClient(new InetSocketAddress("localhost", 8076))
+                        .statelessClient(new InetSocketAddress(HOSTNAME, PORT))
                         .create();
             } catch (IOException e) {
                 throw new DBException(e);
             }
             count.incrementAndGet();
-            if (serverMap != null) return;
-
-            Properties props = getProperties();
-            long recordCount = Long.parseLong(props.getProperty("recordcount", "1000000"));
-
-
-            // server
-            {
-                try {
-                    serverMap = ((ChronicleMapBuilder<String, Map<String, String>>)
-                            (ChronicleMapBuilder)
-                                    ChronicleMapBuilder.of(String.class, Map.class))
-                            .entries(recordCount)
-                            .entrySize(1200)
-                            .keyMarshaller(new StringMarshaller(1024))
-                            .putReturnsNull(true)
-                            .removeReturnsNull(true)
-                            .valueMarshaller(
-                                    new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(1024)))
-                            .replication((byte) 1, TcpTransportAndNetworkConfig.of(8076)).create();
-                } catch (IOException e) {
-                    throw new DBException(e);
-                }
-            }
-
         }
+    }
+
+    private static ChronicleMap<String, Map<String, String>> startServer(long recordCount, Properties props) throws IOException {
+        String tmp = System.getProperty("java.io.tmpdir");
+        String filename = props.getProperty(FILE_NAME, tmp + "/chronicle-" + recordCount + ".ycsb");
+
+        return ((ChronicleMapBuilder<String, Map<String, String>>)
+                (ChronicleMapBuilder)
+                        ChronicleMapBuilder.of(String.class, Map.class))
+                .entries(recordCount)
+                .entrySize(128)
+                .keyMarshaller(new StringMarshaller(1024))
+                .putReturnsNull(true)
+                .removeReturnsNull(true)
+                .valueMarshaller(
+                        new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(1024)))
+                .replication((byte) 1, TcpTransportAndNetworkConfig.of(PORT))
+                .createPersistedTo(new File(filename));
     }
 
     //XXX jedis.select(int index) to switch to `table`
 
     public void cleanup() throws DBException {
-        try {
-            if (count.decrementAndGet() == 0) {
-                serverMap.close();
-            }
-            statelessMap.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (count.decrementAndGet() == 0) {
+            serverMap.close();
         }
+        statelessMap.close();
     }
 
     @Override
@@ -157,4 +160,18 @@ public class ChronicleStatelessClient extends DB {
         return 0;
     }
 
+    /**
+     * To be run on a server for clients to connect to.
+     */
+    public static void main(String[] args) throws IOException {
+        if (args.length < 1) {
+            System.err.println("Usage: " + ChronicleStatelessClient.class.getName() + " recordCount");
+            System.exit(1);
+        }
+        long recordCount = Long.parseLong(args[0]);
+        ChronicleMap<String, Map<String, String>> map = startServer(recordCount, System.getProperties());
+        System.out.println("server running on port " + PORT);
+        System.in.read();
+        map.close();
+    }
 }

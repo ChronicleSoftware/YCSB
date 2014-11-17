@@ -60,12 +60,8 @@ public class ChronicleClient extends DB {
     }
 
     public void cleanup() throws DBException {
-        try {
-            if (count.decrementAndGet() == 0)
-                map.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        if (count.decrementAndGet() == 0)
+            map.close();
     }
 
     @Override

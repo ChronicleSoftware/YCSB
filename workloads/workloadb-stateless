@@ -23,10 +23,10 @@
 
 # run with
 # vm: -Xmx2g -Xmn1800m -Djava.io.tmpdir=/ssd/tmp
-# args: -db com.yahoo.ycsb.db.ChronicleStatelessClient -P workloads/workloada-stateless -t -threads 30
+# args: -db com.yahoo.ycsb.db.ChronicleStatelessClient -P workloads/workloadb-stateless -t -threads 30
 
-recordcount=3000000
-operationcount=3000000
+recordcount=300000
+operationcount=300000
 workload=com.yahoo.ycsb.workloads.CoreWorkload
 
 readallfields=true
@@ -39,5 +39,5 @@ insertproportion=0
 requestdistribution=zipfian
 
 maxexecutiontime=600
-#fieldcount=10
-#fieldlength=10
+fieldcount=10
+fieldlength=10

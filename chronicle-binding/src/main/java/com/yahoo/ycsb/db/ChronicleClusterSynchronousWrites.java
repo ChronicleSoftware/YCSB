@@ -39,7 +39,7 @@ public class ChronicleClusterSynchronousWrites extends DB {
         Properties props = getProperties();
         int fieldcount = Integer.parseInt(props.getProperty("fieldcount", "10"));
         int fieldlength = Integer.parseInt(props.getProperty("fieldlength", "100"));
-        int entrySize = 117; //fieldcount * fieldlength * 12 / 10 + 10;
+        int entrySize = 170; //fieldcount * fieldlength * 12 / 10 + 10;
         synchronized (ChronicleClient.class) {
             try {
                 if (serverMap == null) {

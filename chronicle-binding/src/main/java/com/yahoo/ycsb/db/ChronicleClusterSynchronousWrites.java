@@ -22,11 +22,8 @@ import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * this example shows where the writes are synchronous via the Stateless client, but the reads use TCP
- * Replication, so in effectively the entries are also cached locally.
- */
-public class ChronicleStatelessClient extends DB {
+
+public class ChronicleClusterSynchronousWrites extends DB {
 
     private static final String FILE_NAME = "chronicle.file";
     private static final boolean KEY_CHECK = Boolean.getBoolean("key.check");
@@ -42,33 +39,35 @@ public class ChronicleStatelessClient extends DB {
         Properties props = getProperties();
         int fieldcount = Integer.parseInt(props.getProperty("fieldcount", "10"));
         int fieldlength = Integer.parseInt(props.getProperty("fieldlength", "100"));
-        int entrySize = 256;
+        int entrySize = 117; //fieldcount * fieldlength * 12 / 10 + 10;
         synchronized (ChronicleClient.class) {
             try {
                 if (serverMap == null) {
+
+
                     // server
                     if (HOSTNAME.equals("localhost")) {
                         long recordCount = Long.parseLong(props.getProperty("recordcount", "1000000"));
                         serverMap = startServer(recordCount, props, entrySize);
                     }
                 }
-                // stateless client
 
                 long recordCount = Long.parseLong(props.getProperty("recordcount", "1000000"));
 
-                statelessMap = ((ChronicleMapBuilder<String, Map<String, String>>)
-                        (ChronicleMapBuilder)
-                                ChronicleMapBuilder.of(String.class, Map.class))
+                // stateless client
+                InetSocketAddress[] clients = new InetSocketAddress[]{new InetSocketAddress(HOSTNAME, PORT)};
+
+                statelessMap = ChronicleMapBuilder.of(String.class, Map.class)
                         .entries(recordCount)
-                        .entrySize(400)
-                               .keyMarshaller(new StringMarshaller(0))
-                        .putReturnsNull(true)
-                        .removeReturnsNull(true)
-                        .valueMarshaller(
-                                new MapMarshaller<String, String>(new StringMarshaller(128), new
-                                        StringMarshaller(0)))
-                        .statelessClient(new InetSocketAddress(HOSTNAME, PORT))
+                        .entrySize(entrySize)
+                        .keyMarshaller(new StringMarshaller(0))
+                        .valueMarshaller(new MapMarshaller(new StringMarshaller(128), new
+                                StringMarshaller(0)))
+                        .pushTo(clients)
+                        .replication((byte) 1, TcpTransportAndNetworkConfig.of(8072, clients))
                         .create();
+
+
             } catch (IOException e) {
                 throw new DBException(e);
             }
@@ -78,18 +77,18 @@ public class ChronicleStatelessClient extends DB {
 
     private static ChronicleMap<String, Map<String, String>> startServer(long recordCount, Properties props, int entrySize) throws IOException {
 
+
         return ((ChronicleMapBuilder<String, Map<String, String>>)
                 (ChronicleMapBuilder)
                         ChronicleMapBuilder.of(String.class, Map.class))
                 .entries(recordCount)
-                .entrySize(100 * 1024)
-                        //  .keyMarshaller(new StringMarshaller(0))
+                .entrySize(entrySize)
+                .keyMarshaller(new StringMarshaller(0))
                 .putReturnsNull(true)
                 .removeReturnsNull(true)
-                        //    .valueMarshaller(
-                        //          new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller
-                        //    (0)))
-                .replication((byte) 1, TcpTransportAndNetworkConfig.of(PORT))
+                .valueMarshaller(
+                        new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(0)))
+                .replication((byte) 2, TcpTransportAndNetworkConfig.of(PORT))
                 .create();
     }
 
@@ -175,7 +174,7 @@ public class ChronicleStatelessClient extends DB {
      */
     public static void main(String[] args) throws IOException {
         if (args.length < 1) {
-            System.err.println("Usage: " + ChronicleStatelessClient.class.getName() + " recordCount");
+            System.err.println("Usage: " + ChronicleClusterSynchronousWrites.class.getName() + " recordCount");
             System.exit(1);
         }
         long recordCount = Long.parseLong(args[0]);

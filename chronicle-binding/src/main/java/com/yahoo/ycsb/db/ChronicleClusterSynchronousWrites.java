@@ -64,7 +64,8 @@ public class ChronicleClusterSynchronousWrites extends DB {
                         .valueMarshaller(new MapMarshaller(new StringMarshaller(128), new
                                 StringMarshaller(0)))
                         .pushTo(clients)
-                        .replication((byte) 1, TcpTransportAndNetworkConfig.of(8072, clients))
+                        .replication((byte) 1, TcpTransportAndNetworkConfig.of(8072, clients)
+                                .autoReconnectedUponDroppedConnection(true))
                         .create();
 
 

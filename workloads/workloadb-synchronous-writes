@@ -25,8 +25,8 @@
 # vm: -Xmx2g -Xmn1800m -Djava.io.tmpdir=/ssd/tmp
 # args: -db com.yahoo.ycsb.db.ChronicleClusterSynchronousWrites -P workloads/workloadb-synchronous-writes -t -threads 30
 
-recordcount=1000000
-operationcount=3000000
+recordcount=10000000
+operationcount=30000000
 workload=com.yahoo.ycsb.workloads.CoreWorkload
 
 readallfields=true

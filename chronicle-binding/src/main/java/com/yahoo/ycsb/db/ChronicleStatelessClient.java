@@ -17,6 +17,7 @@ import net.openhft.chronicle.map.ChronicleMapBuilder;
 import net.openhft.lang.io.serialization.impl.MapMarshaller;
 import net.openhft.lang.io.serialization.impl.StringMarshaller;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -85,7 +86,8 @@ public class ChronicleStatelessClient extends DB {
     }
 
     private static ChronicleMap<String, Map<String, String>> startServer(long recordCount, Properties props, int entrySize) throws IOException {
-
+        File file = File.createTempFile("deleteme", ".ycsb");
+        file.deleteOnExit();
         return ((ChronicleMapBuilder<String, Map<String, String>>)
                 (ChronicleMapBuilder)
                         ChronicleMapBuilder.of(String.class, Map.class))
@@ -98,7 +100,7 @@ public class ChronicleStatelessClient extends DB {
                         //          new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller
                         //    (0)))
                 .replication((byte) 1, TcpTransportAndNetworkConfig.of(PORT))
-                .create();
+                .createPersistedTo(file);
     }
 
     //XXX jedis.select(int index) to switch to `table`

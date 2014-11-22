@@ -30,12 +30,14 @@ public class ChronicleStatelessClient extends DB {
 
     private static final String FILE_NAME = "chronicle.file";
     private static final boolean KEY_CHECK = Boolean.getBoolean("key.check");
+    private static final boolean SHARED_CLIENT = Boolean.getBoolean("shared.client");
     private static final AtomicInteger count = new AtomicInteger();
     private static final String HOSTNAME = System.getProperty("server", "localhost");
     private static final int PORT = Integer.getInteger("port", 8076);
 
     private static ChronicleMap<String, Map<String, String>> serverMap;
     final Set<String> keys = Collections.synchronizedSet(new HashSet<String>());
+    private static ChronicleMap<String, Map<String, String>> statelessMap1;
     private ChronicleMap<String, Map<String, String>> statelessMap;
 
     public void init() throws DBException {
@@ -56,19 +58,25 @@ public class ChronicleStatelessClient extends DB {
 
                 long recordCount = Long.parseLong(props.getProperty("recordcount", "1000000"));
 
-                statelessMap = ((ChronicleMapBuilder<String, Map<String, String>>)
-                        (ChronicleMapBuilder)
-                                ChronicleMapBuilder.of(String.class, Map.class))
-                        .entries(recordCount)
-                        .entrySize(400)
-                               .keyMarshaller(new StringMarshaller(0))
-                        .putReturnsNull(true)
-                        .removeReturnsNull(true)
-                        .valueMarshaller(
-                                new MapMarshaller<String, String>(new StringMarshaller(128), new
-                                        StringMarshaller(0)))
-                        .statelessClient(new InetSocketAddress(HOSTNAME, PORT))
-                        .create();
+                if (!SHARED_CLIENT || statelessMap1 == null)
+                    statelessMap = ((ChronicleMapBuilder<String, Map<String, String>>)
+                            (ChronicleMapBuilder)
+                                    ChronicleMapBuilder.of(String.class, Map.class))
+                            .entries(recordCount)
+                            .entrySize(400)
+                            .keyMarshaller(new StringMarshaller(0))
+                            .putReturnsNull(true)
+                            .removeReturnsNull(true)
+                            .valueMarshaller(
+                                    new MapMarshaller<String, String>(new StringMarshaller(128), new
+                                            StringMarshaller(0)))
+                            .statelessClient(new InetSocketAddress(HOSTNAME, PORT))
+                            .create();
+                if (SHARED_CLIENT)
+                    if (statelessMap1 == null)
+                        statelessMap1 = statelessMap;
+                    else
+                        statelessMap = statelessMap1;
             } catch (IOException e) {
                 throw new DBException(e);
             }
@@ -97,9 +105,14 @@ public class ChronicleStatelessClient extends DB {
 
     public void cleanup() throws DBException {
         if (count.decrementAndGet() == 0) {
-            serverMap.close();
+            if (serverMap != null) {
+                serverMap.close();
+            }
+            if (SHARED_CLIENT)
+                statelessMap1.close();
         }
-        statelessMap.close();
+        if (!SHARED_CLIENT)
+            statelessMap1.close();
     }
 
     @Override

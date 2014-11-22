@@ -33,18 +33,16 @@ public class ChronicleClusterSynchronousWrites extends DB {
 
     private static ChronicleMap<String, Map<String, String>> serverMap;
     final Set<String> keys = Collections.synchronizedSet(new HashSet<String>());
-    private ChronicleMap<String, Map<String, String>> statelessMap;
+    private static ChronicleMap<String, Map<String, String>> statelessMap;
 
     public void init() throws DBException {
         Properties props = getProperties();
         int fieldcount = Integer.parseInt(props.getProperty("fieldcount", "10"));
         int fieldlength = Integer.parseInt(props.getProperty("fieldlength", "100"));
-        int entrySize = 170; //fieldcount * fieldlength * 12 / 10 + 10;
+        int entrySize = 256;
         synchronized (ChronicleClient.class) {
             try {
                 if (serverMap == null) {
-
-
                     // server
                     if (HOSTNAME.equals("localhost")) {
                         long recordCount = Long.parseLong(props.getProperty("recordcount", "1000000"));
@@ -57,16 +55,18 @@ public class ChronicleClusterSynchronousWrites extends DB {
                 // stateless client
                 InetSocketAddress[] clients = new InetSocketAddress[]{new InetSocketAddress(HOSTNAME, PORT)};
 
-                statelessMap = ChronicleMapBuilder.of(String.class, Map.class)
-                        .entries(recordCount)
-                        .entrySize(entrySize)
-                        .keyMarshaller(new StringMarshaller(0))
-                        .valueMarshaller(new MapMarshaller(new StringMarshaller(128), new
-                                StringMarshaller(0)))
-                        .pushTo(clients)
-                        .replication((byte) 1, TcpTransportAndNetworkConfig.of(8072, clients)
-                                .autoReconnectedUponDroppedConnection(true))
-                        .create();
+                if (statelessMap == null) {
+                    statelessMap = ChronicleMapBuilder.of(String.class, (Class<Map<String, String>>) (Class) Map.class)
+                            .entries(recordCount)
+                            .entrySize(entrySize)
+                            .keyMarshaller(new StringMarshaller(0))
+                            .valueMarshaller(new MapMarshaller(new StringMarshaller(128), new
+                                    StringMarshaller(0)))
+                            .pushTo(clients)
+                            .replication((byte) 1, TcpTransportAndNetworkConfig.of(8072, clients)
+                                    .autoReconnectedUponDroppedConnection(true))
+                            .create();
+                }
 
 
             } catch (IOException e) {
@@ -93,13 +93,13 @@ public class ChronicleClusterSynchronousWrites extends DB {
                 .create();
     }
 
-    //XXX jedis.select(int index) to switch to `table`
-
     public void cleanup() throws DBException {
         if (count.decrementAndGet() == 0) {
-            serverMap.close();
+            if (serverMap != null) {
+                serverMap.close();
+            }
+            statelessMap.close();
         }
-        statelessMap.close();
     }
 
     @Override

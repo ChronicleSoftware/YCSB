@@ -38,6 +38,6 @@ insertproportion=0
 
 requestdistribution=zipfian
 
-maxexecutiontime=600
+maxexecutiontime=1200
 fieldcount=10
 fieldlength=10

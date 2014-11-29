@@ -92,7 +92,7 @@ public class ChronicleStatelessClient extends DB {
                 (ChronicleMapBuilder)
                         ChronicleMapBuilder.of(String.class, Map.class))
                 .entries(recordCount)
-                .entrySize(100 * 1024)
+                .entrySize(entrySize)
                         //  .keyMarshaller(new StringMarshaller(0))
                 .putReturnsNull(true)
                 .removeReturnsNull(true)

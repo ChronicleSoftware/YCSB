@@ -35,6 +35,17 @@ public class ChronicleClusterSynchronousWrites extends DB {
     private static ChronicleMap<String, Map<String, String>> serverMap;
     final Set<String> keys = Collections.synchronizedSet(new HashSet<String>());
     private static ChronicleMap<String, Map<String, String>> statelessMap;
+    static final File file;
+
+    static {
+        try {
+            file = File.createTempFile("deleteme", ".ycsb");
+            file.deleteOnExit();
+        } catch (IOException e) {
+            throw new AssertionError(e);
+        }
+    }
+
 
     public void init() throws DBException {
         Properties props = getProperties();
@@ -57,15 +68,13 @@ public class ChronicleClusterSynchronousWrites extends DB {
                 InetSocketAddress[] clients = new InetSocketAddress[]{new InetSocketAddress(HOSTNAME, PORT)};
 
                 if (statelessMap == null) {
-                    File file = File.createTempFile("deleteme", ".ycsb");
-                    file.deleteOnExit();
 
                     statelessMap = ChronicleMapBuilder.of(String.class, (Class<Map<String, String>>) (Class) Map.class)
                             .entries(recordCount)
                             .entrySize(entrySize)
                             .keyMarshaller(new StringMarshaller(0))
-                            .valueMarshaller(new MapMarshaller(new StringMarshaller(128), new
-                                    StringMarshaller(0)))
+                            .valueMarshaller(MapMarshaller.of(new StringMarshaller(128),
+                                    new StringMarshaller(0)))
                             .pushTo(clients)
                             .replication((byte) 1, TcpTransportAndNetworkConfig.of(8072, clients)
                                     .autoReconnectedUponDroppedConnection(true))
@@ -94,7 +103,7 @@ public class ChronicleClusterSynchronousWrites extends DB {
                 .putReturnsNull(true)
                 .removeReturnsNull(true)
                 .valueMarshaller(
-                        new MapMarshaller<String, String>(new StringMarshaller(128), new StringMarshaller(0)))
+                        MapMarshaller.of(new StringMarshaller(128), new StringMarshaller(0)))
                 .replication((byte) 2, TcpTransportAndNetworkConfig.of(PORT))
                 .createPersistedTo(file);
     }

@@ -60,16 +60,15 @@ public class ChronicleStatelessClient extends DB {
                 long recordCount = Long.parseLong(props.getProperty("recordcount", "1000000"));
 
                 if (!SHARED_CLIENT || statelessMap1 == null)
-                    statelessMap = ((ChronicleMapBuilder<String, Map<String, String>>)
-                            (ChronicleMapBuilder)
-                                    ChronicleMapBuilder.of(String.class, Map.class))
+                    statelessMap = ChronicleMapBuilder
+                            .of(String.class, (Class<Map<String, String>>) (Class) Map.class)
                             .entries(recordCount)
                             .entrySize(400)
                             .keyMarshaller(new StringMarshaller(0))
                             .putReturnsNull(true)
                             .removeReturnsNull(true)
                             .valueMarshaller(
-                                    new MapMarshaller<String, String>(new StringMarshaller(128), new
+                                    MapMarshaller.of(new StringMarshaller(128), new
                                             StringMarshaller(0)))
                             .statelessClient(new InetSocketAddress(HOSTNAME, PORT))
                             .create();
@@ -88,9 +87,8 @@ public class ChronicleStatelessClient extends DB {
     private static ChronicleMap<String, Map<String, String>> startServer(long recordCount, Properties props, int entrySize) throws IOException {
         File file = File.createTempFile("deleteme", ".ycsb");
         file.deleteOnExit();
-        return ((ChronicleMapBuilder<String, Map<String, String>>)
-                (ChronicleMapBuilder)
-                        ChronicleMapBuilder.of(String.class, Map.class))
+        return ChronicleMapBuilder
+                .of(String.class, (Class<Map<String, String>>) (Class) Map.class)
                 .entries(recordCount)
                 .entrySize(entrySize)
                         //  .keyMarshaller(new StringMarshaller(0))

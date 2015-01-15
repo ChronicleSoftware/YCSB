@@ -42,11 +42,9 @@ public class ChronicleClient extends DB {
             String tmp = System.getProperty("java.io.tmpdir");
             String filename = props.getProperty(FILE_NAME, tmp + "/chronicle-" + recordCount + ".ycsb");
             try {
-                map = ((ChronicleMapBuilder<String, Map<String, String>>)
-                        (ChronicleMapBuilder)
-                                ChronicleMapBuilder.of(String.class, Map.class))
+                map = ChronicleMapBuilder.of(String.class, (Class<Map<String, String>>) (Class) Map.class)
                         .entries(recordCount)
-                        .entrySize(entrySize)
+                        .averageValueSize(entrySize)
                         .keyMarshaller(new StringMarshaller(0))
                         .putReturnsNull(true)
                         .removeReturnsNull(true)

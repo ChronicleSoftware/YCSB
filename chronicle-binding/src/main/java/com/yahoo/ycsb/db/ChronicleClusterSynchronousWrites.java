@@ -71,7 +71,7 @@ public class ChronicleClusterSynchronousWrites extends DB {
 
                     statelessMap = ChronicleMapBuilder.of(String.class, (Class<Map<String, String>>) (Class) Map.class)
                             .entries(recordCount)
-                            .entrySize(entrySize)
+                            .averageValueSize(entrySize)
                             .keyMarshaller(new StringMarshaller(0))
                             .valueMarshaller(MapMarshaller.of(new StringMarshaller(128),
                                     new StringMarshaller(0)))
@@ -94,11 +94,10 @@ public class ChronicleClusterSynchronousWrites extends DB {
         file.deleteOnExit();
 
 
-        return ((ChronicleMapBuilder<String, Map<String, String>>)
-                (ChronicleMapBuilder)
-                        ChronicleMapBuilder.of(String.class, Map.class))
+        return ChronicleMapBuilder
+                .of(String.class, (Class<Map<String, String>>) (Class) Map.class)
                 .entries(recordCount)
-                .entrySize(entrySize)
+                .averageValueSize(entrySize)
                 .keyMarshaller(new StringMarshaller(0))
                 .putReturnsNull(true)
                 .removeReturnsNull(true)

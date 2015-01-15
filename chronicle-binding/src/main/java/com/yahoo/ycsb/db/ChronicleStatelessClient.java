@@ -14,8 +14,6 @@ import com.yahoo.ycsb.StringByteIterator;
 import net.openhft.chronicle.hash.replication.TcpTransportAndNetworkConfig;
 import net.openhft.chronicle.map.ChronicleMap;
 import net.openhft.chronicle.map.ChronicleMapBuilder;
-import net.openhft.lang.io.serialization.impl.MapMarshaller;
-import net.openhft.lang.io.serialization.impl.StringMarshaller;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,8 +22,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * this example shows where the writes are synchronous via the Stateless client, but the reads use TCP
- * Replication, so in effectively the entries are also cached locally.
+ * this example shows where the writes are synchronous via the Stateless client, but the reads use TCP Replication, so
+ * in effectively the entries are also cached locally.
  */
 public class ChronicleStatelessClient extends DB {
 
@@ -61,16 +59,7 @@ public class ChronicleStatelessClient extends DB {
 
                 if (!SHARED_CLIENT || statelessMap1 == null)
                     statelessMap = ChronicleMapBuilder
-                            .of(String.class, (Class<Map<String, String>>) (Class) Map.class)
-                            .entries(recordCount)
-                            .entrySize(400)
-                            .keyMarshaller(new StringMarshaller(0))
-                            .putReturnsNull(true)
-                            .removeReturnsNull(true)
-                            .valueMarshaller(
-                                    MapMarshaller.of(new StringMarshaller(128), new
-                                            StringMarshaller(0)))
-                            .statelessClient(new InetSocketAddress(HOSTNAME, PORT))
+                            .of(String.class, (Class<Map<String, String>>) (Class) Map.class, new InetSocketAddress(HOSTNAME, PORT))
                             .create();
                 if (SHARED_CLIENT)
                     if (statelessMap1 == null)
@@ -90,7 +79,7 @@ public class ChronicleStatelessClient extends DB {
         return ChronicleMapBuilder
                 .of(String.class, (Class<Map<String, String>>) (Class) Map.class)
                 .entries(recordCount)
-                .entrySize(entrySize)
+                .averageValueSize(entrySize)
                         //  .keyMarshaller(new StringMarshaller(0))
                 .putReturnsNull(true)
                 .removeReturnsNull(true)
